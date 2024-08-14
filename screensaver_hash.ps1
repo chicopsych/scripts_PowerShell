@@ -1,7 +1,7 @@
 # Script para implementar protetor de tela para usuários do Windows
 # Autor: Francisco Luvisari Scavassa
 # Data: 2024-08-09
-# Versão: 1.4
+# Versão: 1.4.1b - teste de hash para verificar se o protetor de tela foi alterado
 
 # Variáveis globais
 $registryPath = "HKCU:\Control Panel\Desktop"
@@ -94,12 +94,22 @@ function SetScreenSaver {
     }
     Write-LogMessage "Protetor de tela definido."
 }
-
-# Chamando funções
-CopyScreenSaver
-CheckAndActivateScreenSaver
-SetScreenSaveTimeOut
-SetScreenSaver
+# Executa teste de hash para verificar nessecidade de executar o resto do script
+function HashTest {
+    $hashLocal = Get-FileHash -Path $protetorDeTela -Algorithm SHA1
+    Write-LogMessage "Hash local: $($hashLocal.Hash)"
+    $hashServidor = Get-FileHash -Path $protetorDeTelaNoServidor -Algorithm SHA1
+    Write-LogMessage "Hash servidor: $($hashServidor.Hash)"
+    if ($hashLocal.Hash -ne $hashServidor.Hash) {
+        Write-LogMessage "Hashes diferentes. Copiando protetor de tela do servidor para a máquina local..."
+        CopyScreenSaver
+        CheckAndActivateScreenSaver
+        SetScreenSaveTimeOut
+        SetScreenSaver
+    } else {
+        Write-LogMessage "Hashes iguais. Protetor de tela já está atualizado."
+    }
+}
 
 # Fim do script
 Write-LogMessage "Script finalizado."
