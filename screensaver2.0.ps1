@@ -1,7 +1,7 @@
 # Script para implementar protetor de tela para usuários do Windows
 # Autor: Francisco Luvisari Scavassa
 # Data: 2024-08-09
-# Versão: 1.4
+# Versão: 2.0
 
 # Variáveis globais
 $registryPath = "HKCU:\Control Panel\Desktop"
@@ -14,8 +14,9 @@ $protetorDeTela = "$env:TEMP\protetordetela\protetorDeTela.scr"
 $protetorDeTelaNoServidor = "D:\teste\test_screensaver\protetorDeTela.scr"
 $pastaProtetorDeTela = "$env:TEMP\protetordetela"
 $logFile = "$pastaProtetorDeTela\script_log.txt"
+$timeInactivity = 60 # Tempo de inatividade em segundos
 
-# Função para logar mensagens
+# Função de log do script
 function Write-LogMessage {
     param (
         [string]$message
@@ -29,7 +30,22 @@ function Write-LogMessage {
     $logEntry | Out-File -FilePath $logFile -Append -Encoding utf8
 }
 
-# Função para copiar protetor de tela do servidor para a máquina local
+# Função de comparação de Hash dos arquivos origem e destino
+function ComparaHashes {
+    $hash1 = Get-FileHash -Path $protetorDeTela -Algorithm MD5
+    $hash2 = Get-FileHash -Path $protetorDeTelaNoServidor -Algorithm MD5
+    if ($hash1.Hash -eq $hash2.Hash) {
+        Write-LogMessage "Hashes iguais"
+        return $true
+    } else {
+        Write-LogMessage "Hashes diferentes"
+        Write-LogMessage "Hash1: $($hash1.Hash)"
+        Write-LogMessage "Hash2: $($hash2.Hash)"
+        return $false
+    }
+}
+
+# Função para copiar o protetor de tela para a pasta temporária
 function CopyScreenSaver {
     Write-LogMessage "Iniciando cópia do protetor de tela..."
     try {
@@ -38,11 +54,11 @@ function CopyScreenSaver {
             Write-LogMessage "Pasta temporária criada"
         }
 
-        if (-Not (Test-Path $protetorDeTela)) {
-            Copy-Item -Path $protetorDeTelaNoServidor -Destination $protetorDeTela -ErrorAction Stop
+        if (-Not (Test-Path $protetorDeTela) -or -Not (ComparaHashes)) {
+            Copy-Item -Path $protetorDeTelaNoServidor -Destination $protetorDeTela -Force -ErrorAction Stop
             Write-LogMessage "Protetor de tela copiado para a pasta temporária"
         } else {
-            Write-LogMessage "Protetor de tela já existe na pasta temporária"
+            Write-LogMessage "Protetor de tela já existe na pasta temporária e está atualizado"
         }
     } catch {
         Write-LogMessage "Erro ao copiar o protetor de tela: $_"
@@ -63,7 +79,7 @@ function CheckAndActivateScreenSaver {
     if ($screenSaverIsSecure.ScreenSaverIsSecure -ne 1) {
         Write-LogMessage "Protetor de tela não exige senha para desbloqueio"
     } else {
-        Write-LogMessage "Protetor de tela exige senha para desbloqueio"
+        Write-LogMessage "Desativando exigência de senha para desbloqueio"
         Set-ItemProperty -Path $registryPath -Name ScreenSaverIsSecure -Value 0
     }
     Write-LogMessage "Protetor de tela verificado e ativado."
@@ -71,35 +87,35 @@ function CheckAndActivateScreenSaver {
 
 # Função para definir o tempo de inatividade para ativação do protetor de tela
 function SetScreenSaveTimeOut {
-    $timeout = 60
     Write-LogMessage "Definindo tempo de inatividade para ativação do protetor de tela..."
-    if ($screenSaveTimeOut.ScreenSaveTimeOut -ne $timeout) {
-        Write-LogMessage "Definindo tempo de inatividade para ativação do protetor de tela: 1 minuto"
-        Set-ItemProperty -Path $registryPath -Name ScreenSaveTimeOut -Value $timeout
+    if ($screenSaveTimeOut.ScreenSaveTimeOut -ne $timeInactivity) {
+        Write-LogMessage "Definindo tempo de inatividade para ativação do protetor de tela: $timeInactivity segundos"
+        Set-ItemProperty -Path $registryPath -Name ScreenSaveTimeOut -Value $timeInactivity
     } else {
-        Write-LogMessage "Tempo de inatividade já está configurado para 1 minuto"
+        Write-LogMessage "Tempo de inatividade já está configurado para $timeInactivity segundos"
     }
     Write-LogMessage "Tempo de inatividade definido."
 }
 
 # Função para definir o protetor de tela copiado para pasta temporária
 function SetScreenSaver {
-    $defaultSaver = "$env:TEMP\protetordetela\protetorDeTela.scr"
     Write-LogMessage "Definindo o protetor de tela..."
-    if ($scrnSave.'SCRNSAVE.EXE' -ne $defaultSaver) {
+    if ($scrnSave.'SCRNSAVE.EXE' -ne $protetorDeTela) {
         Write-LogMessage "Definindo protetor de tela para: protetorDeTela.scr"
-        Set-ItemProperty -Path $registryPath -Name SCRNSAVE.EXE -Value $defaultSaver
+        Set-ItemProperty -Path $registryPath -Name SCRNSAVE.EXE -Value $protetorDeTela
     } else {
-        Write-LogMessage "Protetor de tela já está definido como protetorDeTela.scr"
+        Write-LogMessage "Protetor de tela já está definido"
     }
     Write-LogMessage "Protetor de tela definido."
 }
 
-# Chamando funções
-CopyScreenSaver
+# Início da execução do script
+Write-LogMessage "Início da execução do script"
+# Verifica se o arquivo do protetor de tela está na pasta temporária e se precisa ser atualizado
+if (-Not (Test-Path $protetorDeTela) -or -Not (ComparaHashes)) {
+    CopyScreenSaver
+}
+
 CheckAndActivateScreenSaver
 SetScreenSaveTimeOut
 SetScreenSaver
-
-# Fim do script
-Write-LogMessage "Script finalizado."
