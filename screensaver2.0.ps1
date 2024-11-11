@@ -37,7 +37,8 @@ function ComparaHashes {
     if ($hash1.Hash -eq $hash2.Hash) {
         Write-LogMessage "Hashes iguais"
         return $true
-    } else {
+    }
+    else {
         Write-LogMessage "Hashes diferentes"
         Write-LogMessage "Hash1: $($hash1.Hash)"
         Write-LogMessage "Hash2: $($hash2.Hash)"
@@ -57,10 +58,12 @@ function CopyScreenSaver {
         if (-Not (Test-Path $protetorDeTela) -or -Not (ComparaHashes)) {
             Copy-Item -Path $protetorDeTelaNoServidor -Destination $protetorDeTela -Force -ErrorAction Stop
             Write-LogMessage "Protetor de tela copiado para a pasta temporária"
-        } else {
+        }
+        else {
             Write-LogMessage "Protetor de tela já existe na pasta temporária e está atualizado"
         }
-    } catch {
+    }
+    catch {
         Write-LogMessage "Erro ao copiar o protetor de tela: $_"
     }
     Write-LogMessage "Cópia do protetor de tela finalizada."
@@ -72,13 +75,15 @@ function CheckAndActivateScreenSaver {
     if ($screenSaveActive.ScreenSaveActive -ne 1) {
         Write-LogMessage "Protetor de tela estava inativo! ...ativando..."
         Set-ItemProperty -Path $registryPath -Name ScreenSaveActive -Value 1
-    } else {
+    }
+    else {
         Write-LogMessage "Protetor de tela ativo"
     }
 
     if ($screenSaverIsSecure.ScreenSaverIsSecure -ne 1) {
         Write-LogMessage "Protetor de tela não exige senha para desbloqueio"
-    } else {
+    }
+    else {
         Write-LogMessage "Desativando exigência de senha para desbloqueio"
         Set-ItemProperty -Path $registryPath -Name ScreenSaverIsSecure -Value 0
     }
@@ -91,7 +96,8 @@ function SetScreenSaveTimeOut {
     if ($screenSaveTimeOut.ScreenSaveTimeOut -ne $timeInactivity) {
         Write-LogMessage "Definindo tempo de inatividade para ativação do protetor de tela: $timeInactivity segundos"
         Set-ItemProperty -Path $registryPath -Name ScreenSaveTimeOut -Value $timeInactivity
-    } else {
+    }
+    else {
         Write-LogMessage "Tempo de inatividade já está configurado para $timeInactivity segundos"
     }
     Write-LogMessage "Tempo de inatividade definido."
@@ -103,7 +109,8 @@ function SetScreenSaver {
     if ($scrnSave.'SCRNSAVE.EXE' -ne $protetorDeTela) {
         Write-LogMessage "Definindo protetor de tela para: protetorDeTela.scr"
         Set-ItemProperty -Path $registryPath -Name SCRNSAVE.EXE -Value $protetorDeTela
-    } else {
+    }
+    else {
         Write-LogMessage "Protetor de tela já está definido"
     }
     Write-LogMessage "Protetor de tela definido."
