@@ -88,7 +88,7 @@ function Search-File {
 
         # Salva os resultados em um arquivo no diretório de destino
         try {
-            $resultFilePath = Join-Path -Path $pathResult -ChildPath "ResultadoBusca.txt"
+            $resultFilePath = Join-Path -Path $pathResult -ChildPath "ResultadoBuscaPor_"+$type".txt"
 
             # Numera os arquivos encontrados e prepara o conteúdo formatado
             $formattedResults = @()
